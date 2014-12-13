@@ -1,4 +1,4 @@
-![DayZ Logo](http://stuff.skaronator.com/20130823120139172.png)
+![DayZ Logo](https://camo.githubusercontent.com/a08f6234331b69a9c45891bf3b85ab17c4a9908d/687474703a2f2f6461797a2e636f6d2f6173736574732f696d672f6c6f676f732f6865616465725f6c6f676f2e706e67)
 
 
 Current Version
