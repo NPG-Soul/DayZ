@@ -2,14 +2,14 @@ private ["_target", "_pos", "_gps", "_vars", "_hasToolbox", "_hasCrowbar", "_lim
 
 _target = _this select 3;
 _pos = getPos _target;
-_isGate = (typeOf cursorTarget) in ["WoodenGate_4"];
+_isGate = (typeOf cursorTarget) in ["WoodenGate_2","WoodenGate_3","WoodenGate_4"];
 _limit = 2 + round(random 3);
 
 _hasSledgeHammer = "ItemSledgeHammer" in items player;
 _hasCrowbar = "ItemCrowbar" in items player;
 
 if (!_hasSledgeHammer) exitWith {
-	titleText ["You need a toolbox to break into this compound" , "PLAIN DOWN"];
+	titleText ["You need a SledgeHammer to break into this compound" , "PLAIN DOWN"];
 	sleep 1;
 };
 
@@ -30,13 +30,13 @@ while {_isOk} do {
 
 	if (!_hasSledgeHammer) exitWith {
 		_proceed = nil;
-		titleText ["You need a toolbox to break into a house." , "PLAIN DOWN"];
+		titleText ["You need a sledge hammer to break into a gate." , "PLAIN DOWN"];
 		sleep 1;
 	};
 
 	if (!_hasCrowbar) exitWith {
 		_proceed = nil;
-		titleText ["You need a sledge hammer to break into a house." , "PLAIN DOWN"];
+		titleText ["You need a crowbar to break into a gate." , "PLAIN DOWN"];
 		sleep 1;
 	};
 	
@@ -48,9 +48,6 @@ while {_isOk} do {
 	_sfx = "repair";
 	[player,_sfx,0,false,_dis] call dayz_zombieSpeak;  
 	[player,_dis,true,(getPosATL player)] spawn player_alertZombies;
-	
-// Working-Factor for chopping wood.
-    ["Working",0,[100,15,10,0]] call dayz_NutritionSystem;
 	
 //Setup Vars
 	r_interrupt = false;
@@ -70,7 +67,7 @@ while {_isOk} do {
 			r_doLoop = false;
 			_finished = true;
 		};
-		if (r_interrupt or (player getVariable["combattimeout", 0] >= time)) then {
+		if (r_interrupt) then {
 			r_doLoop = false;
 			_finished = false;
 		};
@@ -88,6 +85,7 @@ while {_isOk} do {
 	if(_finished) then {
 	//Add to Counter
 		_counter = _counter + 1;
+
 		
 		//start chance to gain access.
 		if ([0.01] call fn_chance) then {
@@ -137,6 +135,9 @@ if (!_proceed) then {
 	};
 	titleText ["Break in cancelled." , "PLAIN DOWN"];
 };
+
+// Working-Factor for chopping wood.
+["Working",0,[100,15,10,0]] call dayz_NutritionSystem;
 
 //Completed but no success.
 if (_proceed and !_brokein) then {

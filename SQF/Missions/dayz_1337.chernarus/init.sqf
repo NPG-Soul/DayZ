@@ -22,6 +22,12 @@ dayz_POIs = true;
 dayz_infectiousWaterholes = true;
 dayz_DamageMultiplier = 1; //Damage Multiplier for Zombies.
 
+dayz_maxGlobalZeds = 500; //Limit the total zeds server wide.
+dayz_attackRange = 3; // attack range of zeds vehicles are * 2 of this number
+dayz_temperature_override = false; // Set to true to disable all temperature changes.
+
+dayz_OpenTarget_TimerTicks = 60 * 10; //how long can a player be freely attacked for after attacking someone unprovoked.
+
 
 
 
@@ -77,6 +83,14 @@ if (!isDedicated) then {
 		execVM "\z\addons\dayz_code\system\mission\chernarus\security\init.sqf";
 		call compile preprocessFileLineNumbers "\z\addons\dayz_code\system\antihack.sqf";
 	};
+	
+	// remove annoying benches
+	if (toLower(worldName) == "chernarus") then {
+		diag_log format["WARNING: Clearing Benches from %1",worldName];
+		([4654,9595,0] nearestObject 145259) setDamage 1;
+		([4654,9595,0] nearestObject 145260) setDamage 1;
+	};
+	
 	if (dayz_enableRules) then { execVM "rules.sqf"; };
 	if (!isNil "dayZ_serverName") then { execVM "\z\addons\dayz_code\system\watermark.sqf"; };
 	execVM "\z\addons\dayz_code\compile\client_plantSpawner.sqf";

@@ -7,13 +7,14 @@ scriptName "Functions\misc\fn_damageHandler.sqf";
     - Function
     - [unit, selectionName, damage, source, projectile] call fnc_usec_damageHandler;
 ************************************************************/
-private ["_unit","_hit","_damage","_unconscious","_source","_ammo","_Viralzed","_isMinor","_isHeadHit","_isPlayer","_canHitFree","_isBandit","_punishment","_humanityHit","_myKills","_wpst","_sourceDist","_sourceWeap","_scale","_type","_nrj","_rndPain","_hitPain","_wound","_isHit","_isbleeding","_rndBleed","_hitBleed","_isInjured","_lowBlood","_rndInfection","_hitInfection","_isCardiac","_chance","_breakaleg"];_unit = _this select 0;
+private ["_unit","_hit","_damage","_unconscious","_source","_ammo","_Viralzed","_isMinor","_isHeadHit","_isPlayer","_isBandit","_punishment","_humanityHit","_myKills","_wpst","_sourceDist","_sourceWeap","_scale","_type","_nrj","_rndPain","_hitPain","_wound","_isHit","_isbleeding","_rndBleed","_hitBleed","_isInjured","_lowBlood","_rndInfection","_hitInfection","_isCardiac","_chance","_breakaleg","_model"];
 _unit = _this select 0;
 _hit = _this select 1;
 _damage = _this select 2;
 _unconscious = _unit getVariable ["NORRN_unconscious", false];
 _source = _this select 3;
 _ammo = _this select 4;
+_model = typeOf player;
 _Viralzed = typeOf _source in DayZ_ViralZeds;
 _isMinor = (_hit in USEC_MinorWounds);
 _isHeadHit = (_hit == "head_hit");
@@ -21,25 +22,49 @@ _isPlayer = (isPlayer _source);
 
 // anti-hack for local explosions (HelicopterExploSmall, HelicopterExploBig, SmallSecondary...) spawned by hackers
 //diag_log [ diag_ticktime, __FILE__, _this];
+_breakaleg = (((_hit == "legs") AND {(_source==_unit)}) AND {((_ammo=="") AND {(Dayz_freefall select 1 > 3)})}) /*AND {(abs(time - (Dayz_freefall select 0))<1)}*/;
+if ( (!_breakaleg) AND {(((isNull _source) OR {(_unit == _source)}) AND {((_ammo == "") OR {({damage _x > 0.9} count((getposATL vehicle _unit) nearEntities [["Air", "LandVehicle", "Ship"],15]) == 0) AND (count nearestObjects [getPosATL vehicle _unit, ["TrapItems"], 30] == 0)})})}) exitWith {0};
 
-//_breakaleg = (((_hit == "legs") AND {(_source==_unit)}) AND {((_ammo=="") AND {(Dayz_freefall select 1 > 3)})}) /*AND {(abs(time - (Dayz_freefall select 0))<1)}*/;
-//if ( (!_breakaleg) AND {(((isNull _source) OR {(_unit == _source)}) AND {((_ammo == "") OR {({damage _x > 0.9} count((getposATL vehicle _unit) nearEntities [["Air", "LandVehicle", "Ship"],15]) == 0) AND (count nearestObjects [getPosATL vehicle _unit, ["TrapItems"], 30] == 0)})})}) exitWith {0};
+if (_unit == player) then
+{
+    if (_hit == "") then
+	{
+        if ((_source != player) and _isPlayer) then
+		{
+            //_isBandit = (player getVariable["humanity",0]) <= -2000;
+			_isBandit = (_model in ["Bandit1_DZ","BanditW1_DZ"]);
+			
+			//if player is not free to shoot at inform server that _source shot at player
+			if (!_isBandit && !(player getVariable ["OpenTarget",false])) then
+			{
+				PVDZ_send = [_source,"OpenTarget",[]];
+				publicVariableServer "PVDZ_send";
+			};
 
-if (_unit == player) then {
-    if (_hit == "") then {
-        if ((_source != player) and _isPlayer) then {       
-            _canHitFree =   player getVariable ["freeTarget",false];
-            _isBandit = (player getVariable["humanity",0]) <= -2000;
-			_accidentalMurder = (_model in ["Sniper1_DZ","Soldier1_DZ","Camo1_DZ","Skin_Soldier1_DZ"]);
+			// Due to server errors or desync killing someone in a bandit skin with >-2000 humanity CAN occur. 
+            // Attacker should not be punished for killing a Bandit skin under any circumstances. 
+            // To prevent this we check for Bandit Skin. 
+
 			// - Accidental Murder - \\  When wearing the garb of a non-civilian you are taking your life in your own hands
 			// Attackers humanity should not be punished for killing a survivor who has shrouded his identity in military garb.
 
-            _punishment = _canHitFree or _isBandit or _accidentalMurder;
+            _punishment =
+				_isBandit ||
+				{player getVariable ["OpenTarget",false]} ||
+				{_model in ["Sniper1_DZ","Soldier1_DZ","Camo1_DZ","Skin_Soldier1_DZ"]};
             _humanityHit = 0;
 
             if (!_punishment) then {
-                _myKills =  200 - (((player getVariable ["humanKills",0]) / 30) * 100);
+                _myKills =  200 - (((player getVariable ["humanKills",0]) / 3) * 150);
+                // how many non bandit players have I (the shot/damaged player) killed?
+                // punish my killer 200 for shooting a surivor
+                // but subtract 50 for each survivor I've murdered
                 _humanityHit = -(_myKills * _damage);
+                    if (_humanityHit < -800) then {
+                        _humanityHit = -800;
+                    };
+                    // In the case of outrageous damage (crashes, explosions, desync repeated headshots); cap the limit on humanity lost. 
+
                 [_source,_humanityHit] spawn {  
                     private ["_source","_humanityHit"];
                     _source = _this select 0;
@@ -142,7 +167,7 @@ if (_damage > 0.4) then {
     };
 };
 
-/*
+
 //Record Damage to Minor parts (legs, arms)
 if (_hit in USEC_MinorWounds) then {
     private ["_type"];
@@ -173,29 +198,6 @@ if (_hit in USEC_MinorWounds) then {
             [_unit,_hit,(_damage / 2)] call object_processHit;
         };
 		[_unit,_hit,(_damage / 2)] call object_processHit;
-	};
-};
-*/
-
-//Record Damage to Minor parts (legs, arms)
-//Make sure the damage is worth processing
-if (_damage > 0.2) then {
-	if (_hit in USEC_MinorWounds) then {
-		if (_ammo == "zombie") then {
-			if (_hit == "legs") then {
-				[_unit,_hit,(_damage / 6)] call object_processHit;
-			} else {
-				[_unit,_hit,(_damage / 4)] call object_processHit;
-			};
-		} else {;
-			if (_ammo == "") then {
-				[_unit,_hit,_damage] call object_processHit;
-				diag_log format["No Ammo, %1, [%2,%3]",_unit,_hit,_damage];
-			} else {
-				[_unit,_hit,(_damage / 2)] call object_processHit;
-				diag_log format["Not Zombie, %1, [%2,%3]",_unit,_hit,_damage];
-			};
-		};
 	};
 };
 

@@ -1,11 +1,14 @@
-private["_item","_result","_dis","_sfx","_num", "_breaking"];
+private ["_item","_result","_dis","_sfx","_num","_breaking","_counter","_rocks","_findNearestRock","_objInfo","_lenInfo","_objName","_i","_k","_countOut","_isOk","_proceed","_animState","_started","_finished","_isMedic","_itemOut","_wpPos","_nearByPile"];
 
 
 _item = _this;
 call gear_ui_init;
 closeDialog 1;
 
-// allowed trees list move this later
+if(dayz_workingInprogress) exitWith { cutText ["Mining already in progress!", "PLAIN DOWN"];};
+dayz_workingInprogress = true;
+
+// allowed rocks list move this later
 _rocks = ["r2_boulder1.p3d","r2_boulder2.p3d","r2_rock1.p3d","r2_rock2.p3d","r2_rocktower.p3d","r2_rockwall.p3d","r2_stone.p3d"];
 _findNearestRock = objNull;
 
@@ -26,18 +29,18 @@ _findNearestRock = objNull;
     };
     _objName = toLower(toString(_objName));
 	
-    // Exit since we found a tree
+    // Exit since we found a rock
     if (_objName in _rocks) exitWith { _findNearestRock = _x; };
 } foreach nearestObjects [getPosATL player, [], 8];
 
 
 if (!isNull _findNearestRock) then {
-    _countOut = round(random 3);;
+    _countOut = 2 + floor(random 3);
 
     //Remove melee magazines (BIS_fnc_invAdd fix) (add new melee ammo to array if needed)
-    {player removeMagazines _x} forEach ["hatchet_swing","crowbar_swing","Machete_swing","Fishing_Swing"];
+    {player removeMagazines _x} forEach ["Hatchet_Swing","Crowbar_Swing","Machete_Swing","Fishing_Swing"];
 
-    // Start chop tree loop
+    // Start stone mining loop
     _counter = 0;
     _isOk = true;
     _proceed = false;
@@ -48,11 +51,11 @@ if (!isNull _findNearestRock) then {
 
         //setup alert and speak
         _dis=20;
-        _sfx = "chopwood";
+        _sfx = "minestone";
         [player,_sfx,0,false,_dis] call dayz_zombieSpeak;
         [player,_dis,true,(getPosATL player)] call player_alertZombies;
         
-        // Working-Factor for chopping wood.
+        // Working-Factor for mining stone.
         ["Working",0,[100,15,10,0]] call dayz_NutritionSystem;
 
         r_interrupt = false;
@@ -120,21 +123,21 @@ if (!isNull _findNearestRock) then {
             player reveal _item;
         };
             
-        if ((_counter == _countOut) || _breaking) exitWith {
+        if ((_counter >= _countOut) || _breaking) exitWith {
             if (_breaking) then {
-                cutText [localize "str_HatchetHandleBreaks", "PLAIN DOWN"];
+                cutText [localize "str_PickAxeHandleBreaks", "PLAIN DOWN"];
             } else {
-				cutText ["You have finished collecting stone.", "PLAIN DOWN"];
+				cutText [localize "str_mining_finished", "PLAIN DOWN"];
             };
             _isOk = false;
             _proceed = true;
             sleep 1;
         };
-		cutText [format["%1 piles of stone has been successfully mined. Still to go %2", _counter,(_countOut - _counter)], "PLAIN DOWN"];
+		cutText [format[localize "str_mining_progress", _counter,(_countOut - _counter)], "PLAIN DOWN"];
     };
 
     if (!_proceed) then {            
-        cutText ["Cancelled Mining Stone.", "PLAIN DOWN"];
+        cutText [localize "str_mining_canceled", "PLAIN DOWN"];
 
         r_interrupt = false;
 
@@ -146,11 +149,13 @@ if (!isNull _findNearestRock) then {
 	
     //adding melee mags back if needed
     switch (primaryWeapon player) do {
-        case "MeleeHatchet": {player addMagazine 'hatchet_swing';};
-        case "MeleeCrowbar": {player addMagazine 'crowbar_swing';};
-        case "MeleeMachete": {player addMagazine 'Machete_swing';};
+        case "MeleeHatchet": {player addMagazine 'Hatchet_Swing';};
+        case "MeleeCrowbar": {player addMagazine 'Crowbar_Swing';};
+        case "MeleeMachete": {player addMagazine 'Machete_Swing';};
         case "MeleeFishingPole": {player addMagazine 'Fishing_Swing';};
     };
 } else {
-	cutText ["Can not find any rocks around.", "PLAIN DOWN"];
+	cutText [localize "str_mining_no_rocks", "PLAIN DOWN"];
 };
+
+dayz_workingInprogress = false;

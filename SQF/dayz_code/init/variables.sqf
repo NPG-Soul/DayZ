@@ -15,6 +15,17 @@ Camo1_DZ = "Camo1_DZ";
 Soldier1_DZ = "Soldier1_DZ";
 Rocket_DZ = "Rocket_DZ";
 
+//Rolling Msg system
+Message_1 = "";
+Message_2 = "";
+Message_3 = "";
+Message_1_time = 0;
+Message_2_time = 0;
+Message_3_time = 0;
+
+//OpenTarget timer
+OpenTarget_Time = 0;
+
 ///Player class's
 AllPlayers = ["Survivor_DZ","Survivor1_DZ","SurvivorW2_DZ","Survivor2_DZ","Sniper1_DZ","Soldier1_DZ","Camo1_DZ","BanditW1_DZ","Bandit1_DZ","Survivor3_DZ"];
 DayZ_Male = ["Survivor_DZ","Survivor1_DZ","Survivor2_DZ","Survivor3_DZ","Sniper1_DZ","Soldier1_DZ","Camo1_DZ","Bandit1_DZ"];
@@ -22,7 +33,7 @@ DayZ_Female = ["SurvivorW2_DZ","BanditW1_DZ"];
 
 //Classnames for specific items
 MeleeWeapons = ["MeleeHatchet","MeleeCrowbar","MeleeMachete","MeleeBaseball","MeleeBaseBallBat","MeleeBaseBallBatBarbed","MeleeBaseBallBatNails","MeleeFishingPole"];
-MeleeMagazines = ["hatchet_swing","crowbar_swing","Machete_swing","Bat_Swing","BatBarbed_Swing","BatNails_Swing","Fishing_Swing"];
+MeleeMagazines = ["Hatchet_Swing","Crowbar_Swing","Machete_Swing","Bat_Swing","BatBarbed_Swing","BatNails_Swing","Fishing_Swing"];
 //Fishing Tool
 Dayz_fishingItems = ["MeleeFishingPole"];
 //Plants
@@ -48,7 +59,7 @@ DayZ_traps = ["Trap_Cans", "TrapTripwireFlare", "TrapBearTrapSmoke", "TrapTripwi
 DayZ_ViralZeds = ["z_new_villager2","z_new_villager3","z_new_villager4","z_new_worker2","z_new_worker3","z_new_worker4"];
 
 //placed objects
-DayZ_SafeObjects = ["WoodenGate_1","WoodenGate_2","WoodenGate_3","WoodenGate_4","Land_Fire_DZ", "TentStorage","TentStorage0","TentStorage1","TentStorage2","TentStorage3","TentStorage4","StashSmall","StashSmall1","StashSmall2","StashSmall3","StashSmall4","StashMedium","StashMedium1","StashMedium2","StashMedium3", "StashMedium4", "Wire_cat1", "Sandbag1_DZ", "Fence_DZ", "Generator_DZ", "Hedgehog_DZ", "BearTrap_DZ", "DomeTentStorage", "DomeTentStorage0", "DomeTentStorage1", "DomeTentStorage2", "DomeTentStorage3", "DomeTentStorage4", "CamoNet_DZ", "Trap_Cans", "TrapTripwireFlare", "TrapBearTrapSmoke", "TrapTripwireGrenade", "TrapTripwireSmoke", "TrapBearTrapFlare"];
+DayZ_SafeObjects = ["Base_Fire_DZ","WoodenGate_1","WoodenGate_2","WoodenGate_3","WoodenGate_4","Land_Fire_DZ", "TentStorage","TentStorage0","TentStorage1","TentStorage2","TentStorage3","TentStorage4","StashSmall","StashSmall1","StashSmall2","StashSmall3","StashSmall4","StashMedium","StashMedium1","StashMedium2","StashMedium3", "StashMedium4", "Wire_cat1", "Sandbag1_DZ", "Fence_DZ", "Generator_DZ", "Hedgehog_DZ", "BearTrap_DZ", "DomeTentStorage", "DomeTentStorage0", "DomeTentStorage1", "DomeTentStorage2", "DomeTentStorage3", "DomeTentStorage4", "CamoNet_DZ", "Trap_Cans", "TrapTripwireFlare", "TrapBearTrapSmoke", "TrapTripwireGrenade", "TrapTripwireSmoke", "TrapBearTrapFlare"];
 
 //objects with gear menus
 DayZ_GearedObjects = ["Car", "Helicopter", "Motorcycle", "Ship", "TentStorage_base", "StashSmall_base", "StashMedium_base" ];
@@ -60,145 +71,34 @@ DayZ_RestingAnims = ["amovpsitmstpsnonwpstdnon_ground", "amovpsitmstpsnonwpstdno
 dayz_playerAchievements = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 
 //Cooking
-Dayz_meatraw = [
-    "FoodSteakRaw",
-    "FoodmeatRaw",
-    "FoodbeefRaw",
-    "FoodmuttonRaw",
-    "FoodchickenRaw",
-    "FoodrabbitRaw",
-    "FoodbaconRaw",
-    "FoodgoatRaw",
+Dayz_meatraw =
+[
+    "FoodBeefRaw",
+    "FoodMuttonRaw",
+    "FoodChickenRaw",
+    "FoodRabbitRaw",
+    "FoodBaconRaw",
+    "FoodGoatRaw",
 	"FishRawTrout",
 	"FishRawSeaBass",
 	"FishRawTuna"
 ];
-Dayz_meatcooked = [
-    "FoodSteakCooked",
-    "FoodmeatCooked",
-    "FoodbeefCooked",
-    "FoodmuttonCooked",
-    "FoodchickenCooked",
-    "FoodrabbitCooked",
-    "FoodbaconCooked",
-	"FoodgoatCooked",
+
+Dayz_meatcooked =
+[
+    "FoodBeefCooked",
+    "FoodMuttonCooked",
+    "FoodChickenCooked",
+    "FoodRabbitCooked",
+    "FoodBaconCooked",
+	"FoodGoatCooked",
 	"FishCookedTrout",
 	"FishCookedSeaBass",
 	"FishCookedTuna"
 ];
 
-//Eating
-no_output_food = [
-	"FoodMRE",
-	"FoodPistachio",
-	"FoodNutmix",
-	"FoodCandyAnders",
-	"FoodCandyLegacys",
-	"FoodCandyMintception"
-]+Dayz_meatcooked+Dayz_meatraw;
-
-food_with_output=[
-    "FoodCanBakedBeans",
-    "FoodCanSardines",
-    "FoodCanFrankBeans",
-    "FoodCanPasta",
-	"FoodCanGriff",
-	"FoodCanBadguy",
-	"FoodCanBoneboy",
-	"FoodCanCorn",
-	"FoodCanCurgon",
-	"FoodCanDemon",
-	"FoodCanFraggleos",
-	"FoodCanHerpy",
-	"FoodCanDerpy",
-	"FoodCanOrlok",
-	"FoodCanPowell",
-	"FoodCanTylers",
-	"FoodCanUnlabeled",
-	"FoodCanRusUnlabeled",
-	"FoodCanRusPork",
-	"FoodCanRusPeas",
-	"FoodCanRusMilk",
-	"FoodCanRusCorn",
-	"FoodCanRusStew",
-	"FoodChipsSulahoops",
-	"FoodChipsMysticales",
-	"FoodCanPotatoes",
-	"FoodCanBeef"
-];
-
-food_output = [
-    "FoodCanUnlabeledEmpty",
-    "FoodCanUnlabeledEmpty",
-    "FoodCanUnlabeledEmpty",
-    "FoodCanUnlabeledEmpty",
-	"FoodCanGriffEmpty",
-	"FoodCanBadguyEmpty",
-	"FoodCanBoneboyEmpty",
-	"FoodCanCornEmpty",
-	"FoodCanCurgonEmpty",
-	"FoodCanDemonEmpty",
-	"FoodCanFraggleosEmpty",
-	"FoodCanHerpyEmpty",
-	"FoodCanDerpyEmpty",
-	"FoodCanOrlokEmpty",
-	"FoodCanPowellEmpty",
-	"FoodCanTylersEmpty",
-	"FoodCanUnlabeledEmpty",
-	"FoodCanRusUnlabeledEmpty",
-	"FoodCanRusPorkEmpty",
-	"FoodCanRusPeasEmpty",
-	"FoodCanRusMilkEmpty",
-	"FoodCanRusCornEmpty",
-	"FoodCanRusStewEmpty",
-	"FoodChipsSulahoopsEmpty",
-	"FoodChipsMysticalesEmpty",
-	"FoodCanPotatoesEmpty",
-	"FoodCanBeefEmpty"
-];
-//Drinking
-no_output_drink = ["ItemWaterbottle", "ItemWaterbottleBoiled", "ItemWaterBottleInfected", "ItemWaterBottleSafe"];
-
-drink_with_output = [
-    "ItemSoda",  //just to define item for ItemSodaEmpty
-	"ItemSodaClays",
-	"ItemSodaDrwaste",
-	"ItemSodaFranka",
-	"ItemSodaGrapeDrink",
-	"ItemSodaLemonade",
-	"ItemSodaLirik",
-	"ItemSodaLvg",
-	"ItemSodaMtngreen",
-	"ItemSodaMzly",
-	"ItemSodaPeppsy",
-	"ItemSodaR4z0r",
-	"ItemSodaRabbit",
-	"ItemSodaRocketFuel",
-	"ItemSodaSacrite",
-	//"ItemSodaSherbet",
-	"ItemSodaSmasht"
-];
- 
-drink_output = [
-    "ItemSodaEmpty",
-	"ItemSodaClaysEmpty",
-	"ItemSodaDrwasteEmpty",
-	"ItemSodaFrankaEmpty",
-	"ItemSodaGrapeDrinkEmpty",
-	"ItemSodaLemonadeEmpty",
-	"ItemSodaLirikEmpty",
-	"ItemSodaLvgEmpty",
-	"ItemSodaMtngreenEmpty",
-	"ItemSodaMzlyEmpty",
-	"ItemSodaPeppsyEmpty",
-	"ItemSodaR4z0rEmpty",
-	"ItemSodaRabbitEmpty",
-	"ItemSodaRocketFuelEmpty",
-	"ItemSodaSacriteEmpty",
-	//"ItemSodaSherbetEmpty",
-	"ItemSodaSmashtEmpty"
-];
-boil_tin_cans = [
+boil_tin_cans =
+[
     "TrashTinCan",
 	"FoodCanGriffEmpty",
 	"FoodCanBadguyEmpty",
@@ -244,16 +144,20 @@ canPickup = false;
 pickupInit = false;
 
 //Hunting Variables
-dayZ_partClasses = [
+dayZ_partClasses =
+[
 	"PartFueltank",
 	"PartWheel",
 	//"PartGeneric", //No need to add, it is default for everything
 	"PartEngine"
 ];
-dayZ_explosiveParts = [
+
+dayZ_explosiveParts =
+[
 	"palivo",
 	"motor"
 ];
+
 //Survival Variables
 SleepFood = 2160; //minutes (48 hours)
 SleepWater = 1440; //minutes (24 hours)
@@ -320,6 +224,7 @@ dayz_resetSelfActions = {
 	s_player_openGate = -1;
 	s_player_CloseGate = -1;
 	s_player_breakinhouse = -1;
+	s_player_setCode = -1;
 };
 call dayz_resetSelfActions;
 
@@ -400,6 +305,7 @@ r_antiA_done = false;
 r_antiB_done = false;
 r_antiD_done = false;
 carryClick = false;
+dayz_workingInprogress = false;
 
 //INT Nutrition Info
 r_player_Nutrition = [0]; //[Calories]
@@ -510,6 +416,14 @@ if(isNil "dayz_bleedingeffect") then {
 
 if(isNil "dayz_DamageMultiplier") then { 
 	dayz_DamageMultiplier = 1;
+};
+
+if(isNil "dayz_temperature_override") then { 
+	dayz_temperature_override = false;
+};
+
+if(isNil "dayz_attackRange") then { 
+	dayz_attackRange = 3;
 };
 
 //init global arrays for Loot Chances
@@ -632,7 +546,9 @@ if(!isDedicated) then {
 //Current total
 	dayz_currentGlobalZombies = 0;
 //Max global zeds.
-	dayz_maxGlobalZeds = 1000;
+	if(isNil "dayz_maxGlobalZeds") then {
+		dayz_maxGlobalZeds = 1000;
+	};
 //Animals
 	dayz_currentGlobalAnimals =	0;
 	dayz_maxGlobalAnimals =		50;

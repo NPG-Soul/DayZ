@@ -1,5 +1,5 @@
 private ["_date","_year","_month","_day","_hour","_minute","_date1","_hiveResponse","_key","_objectCount","_dir","_point","_i","_action","_dam","_selection","_wantExplosiveParts","_entity","_worldspace","_damage","_booleans","_rawData","_ObjectID","_class","_CharacterID","_inventory","_hitpoints","_fuel","_id","_objectArray","_script","_result","_outcome"];
-//[]execVM "\z\addons\dayz_server\system\s_fps.sqf"; //server monitor FPS (writes each ~181s diag_fps+181s diag_fpsmin*)
+[]execVM "\z\addons\dayz_server\system\s_fps.sqf"; //server monitor FPS (writes each ~181s diag_fps+181s diag_fpsmin*)
 #include "\z\addons\dayz_server\compile\server_toggle_debug.hpp"
 
 waitUntil{!isNil "BIS_MPF_InitDone"};
@@ -107,11 +107,11 @@ _countr = 0;
 		//diag_log format["OBJ: %1 - %2,%3,%4,%5,%6,%7,%8", _idKey,_type,_ownerID,_worldspace,_inventory,_hitPoints,_fuel,_damage];
 		
 		DayZ_nonCollide = ["TentStorage","TentStorage","TentStorage0","TentStorage1","TentStorage2","TentStorage3","TentStorage4","StashSmall","StashSmall1","StashSmall2","StashSmall3","StashSmall4","StashMedium","StashMedium1","StashMedium2","StashMedium3", "StashMedium4", "DomeTentStorage", "DomeTentStorage0", "DomeTentStorage1", "DomeTentStorage2", "DomeTentStorag3", "DomeTentStorage4", "CamoNet_DZ"];
-
 		
 		//Create it
 		_object = createVehicle [_type, _pos, [], 0, if (_type in DayZ_nonCollide) then {"NONE"} else {"CAN_COLLIDE"}];
-		_object setVariable ["lastUpdate",time];
+		// prevent immediate hive write when vehicle parts are set up
+		_object setVariable ["lastUpdate",diag_ticktime];
 		_object setVariable ["ObjectID", _idKey, true];
 		dayz_serverIDMonitor set [count dayz_serverIDMonitor,_idKey];
 		_object setVariable ["CharacterID", _ownerID, true];
@@ -122,6 +122,8 @@ _countr = 0;
 		if (!_wsDone) then {
 			[_object,"position",true] call server_updateObject;
 		};
+		
+		if (_type == "Base_Fire_DZ") then { _object spawn base_fireMonitor; };
 		
 		//Dont add inventory for traps.
 		if (!(_object isKindOf "TrapItems") And !(_object iskindof "DZ_buildables")) then {
@@ -135,6 +137,7 @@ _countr = 0;
 				_magItemQtys = _x select 1;
 				_i = _forEachIndex;
 				{    
+				/*
 					if (_x == "Crossbow") then { _x = "Crossbow_DZ" }; // Convert Crossbow to Crossbow_DZ
 					if (_x == "BoltSteel") then { _x = "WoodenArrow" }; // Convert BoltSteel to WoodenArrow
 					if (_x == "ItemBloodbag") then { _x = "bloodBagONEG" }; // Convert ItemBloodbag into universal blood type/rh bag
@@ -143,7 +146,7 @@ _countr = 0;
 					//if (_x == "M14_EP1") then { _x = "M14_DZ" };
 					if (_x == "SVD") then { _x = "SVD_DZ" }; 
 					if (_x == "SVD_CAMO") then { _x = "SVD_CAMO_DZ" };
-					if (_x == "ItemMatchbox") then { _x = "Item5Matchbox" };
+				*/
 					if ((isClass(configFile >> (_config select _i) >> _x)) &&
 						{(getNumber(configFile >> (_config select _i) >> _x >> "stopThis") != 1)}) then {
 						if (_forEachIndex < count _magItemQtys) then {
@@ -166,40 +169,45 @@ _countr = 0;
 
 				[_object,_selection,_dam] call fnc_veh_setFixServer;
 			} forEach _hitpoints;
+			
 			_object setvelocity [0,0,1];
 			_object setFuel _fuel;
 			_object call fnc_veh_ResetEH;
-		} 
-		else { 
+			
+		} else { 
 			if (_type in DayZ_nonCollide) then {
 				_pos set [2,0];
 				_object addMPEventHandler ["MPKilled",{_this call vehicle_handleServerKilled;}];
 			};
 			if (_pos select 2 == 0 or 0 == getNumber (configFile >> "CfgVehicles" >> _type >> "canbevertical")) then {
 				_object setVectorUp surfaceNormal _pos;
-			}
-			else {
+			} else {
 				_object setVectorUp [0,0,1];
 			};
 			_object setPosATL _pos;
 			if (_object iskindof "DZ_buildables") then {
-				_object allowDamage false;
+				_object addMPEventHandler ["MPKilled",{_this call vehicle_handleServerKilled;}];
 			};
 			if (_object isKindOf "TrapItems" or _object isKindOf "DZ_buildables") then {
+				//Use inventory for owner/clan info & traps armed state
 				{
 					if (typeName _x != "ARRAY") then {
 						// old method
 						if (typeName _x == "STRING") then { _object setVariable ["ownerArray", [_x], true]; };
 						if (typeName _x == "BOOLEAN") then { _object setVariable ["armed", _x, true]; };
-					}
-					else { // new method: array of variables to set
+					} else { // new method: array of variables to set
 						switch (_x select 0) do {
 							case "ownerArray" : { _object setVariable ["ownerArray", _x select 1, true]; };
+							case "clanArray" : { _object setVariable ["clanArray", _x select 1, true]; };
 							case "armed" : { _object setVariable ["armed", _x select 1, true]; };
-							//etc
+							case "padlockCombination" : { _object setVariable ["dayz_padlockCombination",_x select 1,false]; };
 						};
 					};
 				} forEach _inventory;
+				//Use hitpoints for Maintenance system.
+				{
+					if (_x == "Maintenance") then { _object setVariable ["Maintenance", true, true]; };
+				} foreach _hitPoints;
 			};
 		};
 		
@@ -220,12 +228,6 @@ call server_plantSpawner;
 // launch the new task scheduler
 [] execVM "\z\addons\dayz_server\system\scheduler\sched_init.sqf";
 
-// remove annoying benches
-if (toLower(worldName) == "chernarus") then {
-	([4654,9595,0] nearestObject 145259) setDamage 1;
-	([4654,9595,0] nearestObject 145260) setDamage 1;
-};
-
 createCenter civilian;
 if (isDedicated) then {
 	endLoadingScreen;
@@ -234,6 +236,49 @@ allowConnection = true;
 sm_done = true;
 publicVariable "sm_done";
 
+// Trap loop
+[] spawn {
+	private ["_array","_array2","_array3","_script","_armed"];
+	_array = str dayz_traps;
+	_array2 = str dayz_traps_active;
+	_array3 = str dayz_traps_trigger;
+
+	while {1 == 1} do {
+		if ((str dayz_traps != _array) || (str dayz_traps_active != _array2) || (str dayz_traps_trigger != _array3)) then {
+			_array = str dayz_traps;
+			_array2 = str dayz_traps_active;
+			_array3 = str dayz_traps_trigger;
+
+			//diag_log "DEBUG: traps";
+			//diag_log format["dayz_traps (%2) -> %1", dayz_traps, count dayz_traps];
+			//diag_log format["dayz_traps_active (%2) -> %1", dayz_traps_active, count dayz_traps_active];
+			//diag_log format["dayz_traps_trigger (%2) -> %1", dayz_traps_trigger, count dayz_traps_trigger];
+			//diag_log "DEBUG: end traps";
+		};
+
+		{
+			if (isNull _x) then {
+				dayz_traps = dayz_traps - [_x];
+			};
+
+			_script = call compile getText (configFile >> "CfgVehicles" >> typeOf _x >> "script");
+			_armed = _x getVariable ["armed", false];
+
+			if (_armed) then {
+				if !(_x in dayz_traps_active) then {
+					["arm", _x] call _script;
+				};
+			} else {
+				if (_x in dayz_traps_active) then {
+					["disarm", _x] call _script;
+				};
+			};
+
+			sleep 0.01;
+		} forEach dayz_traps;
+	sleep 1;
+	};
+};
 
 
 //Spawn camps and carepak once

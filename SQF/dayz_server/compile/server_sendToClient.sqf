@@ -31,6 +31,19 @@ switch (_variable) do {
 		};
 	};
 	
+	case "SetEngineState": {
+		_vehicle = _arraytosend select 0;
+		_state = _arraytosend select 1;
+		
+		if (local _vehicle) then {
+			//_vehicle engineOn _state;
+			_vehicle setOwner _owner;
+		} else {
+			PVCDZ_veh_engineSwitch = _arraytosend;
+			_owner publicVariableClient  "PVCDZ_veh_engineSwitch";
+		};
+	};
+	
 	case "GutBody": {
 		PVCDZ_obj_GutBody = _arraytosend;
 		_owner publicVariableClient "PVCDZ_obj_GutBody";
@@ -105,5 +118,14 @@ switch (_variable) do {
 	case "Legs": {
 		PVCDZ_plr_Legs = _arraytosend;
 		_owner publicVariableClient "PVCDZ_plr_Legs";
+	};
+	
+	//reset OpenTarget timer
+	case "OpenTarget":
+	{
+		_unit setVariable["OpenTarget",true,true];
+		
+		PVCDZ_OpenTarget_Reset = true;
+		_owner publicVariableClient "PVCDZ_OpenTarget_Reset";
 	};
 };

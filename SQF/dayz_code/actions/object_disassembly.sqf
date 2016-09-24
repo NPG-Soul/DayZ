@@ -1,11 +1,10 @@
-// (c) facoptere@gmail.com, licensed to DayZMod for the community
 private ["_cursorTarget","_onLadder","_isWater","_alreadyRemoving","_characterID","_objectID","_objectUID","_ownerArray","_dir",
     "_realObjectStillThere","_upgrade","_entry","_parent","_requiredParts","_requiredTools","_model","_toolsOK","_displayname",
     "_whpos","_i","_wh","_object"];
 
-//if (!isNil "faco_object_disassembly") exitWith { _this call faco_object_disassembly;};
 
 _cursorTarget = _this select 3;
+
 // ArmaA2 bug workaround: sometimes the object is null
 if ((isNil "_cursorTarget") or {(isNull _cursorTarget)}) then {
     _cursorTarget = nearestObjects [ player modelToWorld [0,1.5,0] , ["DZ_buildables","BuiltItems"], 1.5];
@@ -13,7 +12,9 @@ if ((isNil "_cursorTarget") or {(isNull _cursorTarget)}) then {
 };
 
 if(isNull _cursorTarget) exitWith {
-    cutText [localize "str_disassembleNoOption", "PLAIN DOWN"];
+    //cutText [localize "str_disassembleNoOption", "PLAIN DOWN"];
+	_msg = localize "str_disassembleNoOption";
+	_msg call dayz_rollingMessages;
 };
 
 //Remove action Menu
@@ -24,12 +25,16 @@ s_player_disassembly = -1;
 _onLadder = (getNumber (configFile >> "CfgMovesMaleSdr" >> "States" >> (animationState player) >> "onLadder")) == 1;
 _isWater = (surfaceIsWater (getPosATL player)) or dayz_isSwimming;
 if(_isWater or _onLadder) exitWith {
-    //cutText ["unable to upgrade at this time", "PLAIN DOWN"];
-    cutText [localize "str_disassembleInProgress", "PLAIN DOWN"];
+	_msg = localize "str_disassembleInProgress";
+	_msg call dayz_rollingMessages;
 };
 
 _alreadyRemoving = _cursorTarget getVariable["alreadyRemoving",0];
-if (_alreadyRemoving == 1) exitWith {cutText [localize "str_disassembleInProgress" , "PLAIN DOWN"]};
+if (_alreadyRemoving == 1) exitWith {
+	_msg = localize "str_disassembleInProgress";
+	_msg call dayz_rollingMessages;
+};
+
 _cursorTarget setVariable["alreadyRemoving",1];
 _characterID = _cursorTarget getVariable ["characterID","0"];
 _objectID = _cursorTarget getVariable ["ObjectID","0"];
@@ -44,6 +49,7 @@ _realObjectStillThere = true;
 _upgrade = typeOf _cursorTarget;
 _entry = configFile >> "CfgVehicles" >> _upgrade;
 r_interrupt = false;
+
 for "_i" from 1 to 20 do {
     _parent = inheritsFrom _entry;
     _requiredParts = [] + (getArray (_parent >> "Upgrade" >> "requiredParts"));
@@ -56,9 +62,12 @@ for "_i" from 1 to 20 do {
     {
         if (!(_x IN items player)) exitWith { _toolsOK = false; };
     } count _requiredTools;
+	
     if (!_toolsOK) exitWith {
-        cutText [format [localize "str_disassembleMissingTool",getText (configFile >> "CfgWeapons" >> _x >> "displayName"),_displayname], "PLAIN DOWN"];//["Missing %1 to disassemble %2."
-    };
+        //cutText [format [localize "str_disassembleMissingTool",getText (configFile >> "CfgWeapons" >> _x >> "displayName"),_displayname], "PLAIN DOWN"];//["Missing %1 to disassemble %2."
+    	_msg = format [localize "str_disassembleMissingTool",getText (configFile >> "CfgWeapons" >> _x >> "displayName"),_displayname];
+		_msg call dayz_rollingMessages;
+	};
 
     if (getNumber (configFile >> "CfgMovesMaleSdr" >> "States" >> (animationState player) >> "disableWeapons") == 0) then {
         player playActionNow "Medic";
@@ -102,9 +111,11 @@ for "_i" from 1 to 20 do {
 
     // create the parent object locally
     _upgrade = configName _parent;
-    _cursorTarget = _upgrade createVehicleLocal getMarkerpos "respawn_west";
-    _cursorTarget setVectorDirAndUp _vector;
-    _cursorTarget setPosATL _pos;
+	if (getNumber(_parent >> "scope")==2) then {
+		_cursorTarget = _upgrade createVehicleLocal getMarkerpos "respawn_west";
+		_cursorTarget setVectorDirAndUp _vector;
+		_cursorTarget setPosATL _pos;
+	};
 
     sleep 1.5;
 
@@ -129,29 +140,33 @@ if (!_realObjectStillThere) then {
     if (!isNull _cursorTarget) then {
         _upgrade = typeOf _cursorTarget;
         deleteVehicle _cursorTarget;
-        _object = createVehicle [_upgrade, getMarkerpos "respawn_west", [], 0, "CAN_COLLIDE"];
-        if (_object isKindOf "DZ_buildables") then { _object allowDamage false; };
-        _object setVectorDirAndUp _vector;
-        _object setPosATL _pos;
-        _puid = getPlayerUID player;
-        if (!(_puid in _ownerArray)) then {
-            _ownerArray set [ count _ownerArray, _puid ];
-        };        
-        _object setVariable ["ownerArray",_ownerArray,true];
-        _variables = [[ "ownerArray", _ownerArray]];
-        _object setVariable ["characterID",_characterID,true];
-        PVDZ_obj_Publish = [dayz_characterID,_object,[_dir, _pos],_variables];
-        publicVariableServer "PVDZ_obj_Publish";
-        diag_log [diag_ticktime, __FILE__, "New Networked object, request to save to hive. PVDZ_obj_Publish:", PVDZ_obj_Publish];
-        /*
-        //Send maintenance info
-        PVDZ_veh_Save = [_object,"maintenance"];
-        publicVariableServer "PVDZ_veh_Save";*/
-        player reveal _object;
+		if (getNumber(_parent >> "scope")==2) then {
+			_object = createVehicle [_upgrade, getMarkerpos "respawn_west", [], 0, "CAN_COLLIDE"];
+			if (_object isKindOf "DZ_buildables") then { _object allowDamage false; };
+			_object setVectorDirAndUp _vector;
+			_object setPosATL _pos;
+			_puid = getPlayerUID player;
+			if (!(_puid in _ownerArray)) then {
+				_ownerArray set [ count _ownerArray, _puid ];
+			};        
+			_object setVariable ["ownerArray",_ownerArray,true];
+			_variables = [[ "ownerArray", _ownerArray]];
+			_object setVariable ["characterID",_characterID,true];
+			PVDZ_obj_Publish = [dayz_characterID,_object,[_dir, _pos],_variables];
+			publicVariableServer "PVDZ_obj_Publish";
+			diag_log [diag_ticktime, __FILE__, "New Networked object, request to save to hive. PVDZ_obj_Publish:", PVDZ_obj_Publish];
+			/*
+			//Send maintenance info
+			PVDZ_veh_Save = [_object,"maintenance"];
+			publicVariableServer "PVDZ_veh_Save";*/
+			player reveal _object;
+		};
     };
 };
 
-cutText [localize "str_disassembleDone", "PLAIN DOWN"];
+_msg = localize "str_disassembleDone";
+_msg call dayz_rollingMessages;
+//cutText [localize "str_disassembleDone", "PLAIN DOWN"];
 
 player setVariable["alreadyBuilding",0];
 

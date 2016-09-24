@@ -75,7 +75,9 @@ if ((_maxlocalspawned < _maxControlledZombies) and (dayz_CurrentNearByZombies < 
 		_tooClose = {isPlayer _x} count (_position nearEntities ["CAManBase",30]) > 0;
 		if (_tooClose) exitwith { diag_log ("Zombie_Generate: was too close to player."); };
 		
-		_unitTypes = []+ getArray (configFile >> "CfgBuildingLoot" >> "Default" >> "zombieClass");
+		if (count _unitTypes == 0) then {
+			_unitTypes = []+ getArray (configFile >> "CfgBuildingLoot" >> "Default" >> "zombieClass");
+		};
 		
 		// lets create an agent
 		_type = _unitTypes call BIS_fnc_selectRandom;
@@ -91,6 +93,7 @@ if ((_maxlocalspawned < _maxControlledZombies) and (dayz_CurrentNearByZombies < 
 		//add to global counter 
 		dayz_spawnZombies = dayz_spawnZombies + 1;
 		dayz_CurrentNearByZombies = dayz_CurrentNearByZombies + 1;
+		dayz_currentGlobalZombies = dayz_currentGlobalZombies + 1;
 		
 		//Add some loot
 		_loot = "";

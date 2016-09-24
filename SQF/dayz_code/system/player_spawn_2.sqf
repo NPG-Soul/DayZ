@@ -9,9 +9,14 @@ _timer = diag_tickTime;
 _timer1 = diag_tickTime;
 _spawnCheck = diag_tickTime;
 _timer2 = diag_Ticktime;
+_timer5 = diag_Ticktime;
 _timer10 = diag_Ticktime;
 _timer30 = diag_Ticktime;
 _timer150 = diag_ticktime;
+
+_forceHumanity = false;
+
+_runonce = false;
 
 _timerMonitor = diag_ticktime;
 
@@ -31,6 +36,11 @@ while {1 == 1} do {
 	_vel = velocity player;
 	_speed = round((_vel distance [0,0,0]) * 3.5);
 	_saveTime = (playersNumber west * 2) + 10;
+	
+	//reset rating always
+	if (((rating player) > 0) or ((rating player) < 0)) then {
+		player setUnitRank "PRIVATE";
+	};
 
 dayz_myLoad = (((count dayz_myBackpackMags) * 0.2) + (count dayz_myBackpackWpns)) + (((count dayz_myMagazines) * 0.1) + (count dayz_myWeapons * 0.5));
 	
@@ -66,27 +76,34 @@ dayz_myLoad = (((count dayz_myBackpackMags) * 0.2) + (count dayz_myBackpackWpns)
 
 	if (_timeOut > 150) then {
 		_humanity = player getVariable ["humanity",0];
-		if (_humanity < 1) then {
-			[player, round(_timeOut / 10)] call player_humanityChange;
+		if (_humanity < 1 or _forceHumanity) then {
+			if (vehicle player != player) then {
+				[player, round(_timeOut / 10)] call player_humanityChange;
+				_forceHumanity = false;
+			} else {
+				_humanity = _humanity + round(_timeOut / 10);
+				player setVariable["humanity",_humanity,true];
+				_forceHumanity = true;
+			};
 		};
 		_timeOut = 0;
 	};
-	
-/*	if ((diag_tickTime - _timer10) > 10) then {
-		{	
-		//crickets
-			(getPosATL _x) spawn {
-				sleep random 10;
-				_sound=format["Sound_Crickets%1",1+floor random 3];
-				_x = createSoundSource [_sound, _this, [], 0];
-				sleep 2;
-				deleteVehicle _x;
-			};			
-		} foreach (nearestObjects [getPosATL player, ["Dayz_Plant1","Dayz_Plant2","Dayz_Plant3"], 15]);
+
+/*	
+	if ((Dayz_loginCompleted) && (diag_tickTime < 25)) then {
+
+		[player,0] call player_humanityChange;
 		
+		diag_log ("Running");
 		_timer10 = diag_Ticktime;
 	};
 */
+	
+	//reset OpenTarget variable if the timer has run out.
+	if (OpenTarget_Time > 0 && {diag_tickTime - OpenTarget_Time >= dayz_OpenTarget_TimerTicks}) then
+	{
+		player setVariable ["OpenTarget",false,true];
+	};
 	
 	if ((diag_tickTime - _timer150) > 60) then {
 		//Digest Food.
@@ -131,38 +148,45 @@ dayz_myLoad = (((count dayz_myBackpackMags) * 0.2) + (count dayz_myBackpackWpns)
 			dayZ_lastPlayerUpdate = diag_ticktime;
 		};
 	};
-
+	
 	//Hunger
-	_hunger = (abs((((r_player_bloodTotal - r_player_blood) / r_player_bloodTotal) * 5) + _speed + dayz_myLoad) * 3);
-	if (diag_ticktime - dayz_panicCooldown < 120) then {
-		_hunger = _hunger * 2;
-	};
-	dayz_hunger = dayz_hunger + (_hunger / 60);
-	dayz_hunger = (dayz_hunger min SleepFood) max 0;
-
-	if (dayz_hunger >= SleepFood) then {
-		if (r_player_blood < 10) then {
-			_id = [player,"starve"] spawn player_death;
+	//Quick Fix - Temp system to reduce consumption rate. (ill need to double the tinned food values and reset this later) 
+	if ((diag_tickTime - _timer2) > 4) then {
+		_hunger = (abs((((r_player_bloodTotal - r_player_blood) / r_player_bloodTotal) * 5) + _speed + dayz_myLoad) * 3);
+		if (diag_ticktime - dayz_panicCooldown < 120) then {
+			_hunger = _hunger * 2;
 		};
-	};
+		dayz_hunger = dayz_hunger + (_hunger / 60);
+		dayz_hunger = (dayz_hunger min SleepFood) max 0;
 
+		if (dayz_hunger >= SleepFood) then {
+			if (r_player_blood < 10) then {
+				_id = [player,"starve"] spawn player_death;
+			};
+		};
+		
 	//Thirst
-	_thirst = 2;
-	if (_refObj == player) then {
-		_thirst = (_speed + 4) * 3;
-	};
-	dayz_thirst = dayz_thirst + (_thirst / 60) * (dayz_temperatur / dayz_temperaturnormal);	//TeeChange Temperatur effects added Max Effects: -25% and + 16.6% waterloss
-	dayz_thirst = (dayz_thirst min SleepWater) max 0;
-
-	if (dayz_thirst >= SleepWater) then {
-		if (r_player_blood < 10) then {
-			_id = [player,"dehyd"] spawn player_death;
+		_thirst = 2;
+		if (_refObj == player) then {
+			_thirst = (_speed + 4) * 3;
 		};
+		dayz_thirst = dayz_thirst + (_thirst / 60) * (dayz_temperatur / dayz_temperaturnormal);	//TeeChange Temperatur effects added Max Effects: -25% and + 16.6% waterloss
+		dayz_thirst = (dayz_thirst min SleepWater) max 0;
+
+		if (dayz_thirst >= SleepWater) then {
+			if (r_player_blood < 10) then {
+				_id = [player,"dehyd"] spawn player_death;
+			};
+		};
+		
+		//diag_log format ["playerSpawn2 %1/%2",dayz_hunger,dayz_thirst];
 	};
 	
 	//Calories
 	if (dayz_nutrition > 0) then {
 		_Nutrition = dayz_nutrition;
+		_hunger = (abs((((r_player_bloodTotal - r_player_blood) / r_player_bloodTotal) * 5) + _speed + dayz_myLoad) * 3);
+		_thirst = 2; if (_refObj == player) then {_thirst = (_speed + 4) * 3;};
 		_NutritionLoss = _Nutrition - (((_thirst / 1000) + (_hunger / 1000)) * (dayz_temperatur / dayz_temperaturnormal));		
 		r_player_Nutrition = [_NutritionLoss];
 	} else {
@@ -334,8 +358,8 @@ dayz_myLoad = (((count dayz_myBackpackMags) * 0.2) + (count dayz_myBackpackWpns)
 	if(isNil {login_ammochecked}) then {
 		login_ammochecked = true;
 		 _wpnType = primaryWeapon player;
-		_ismelee = (gettext (configFile >> "CfgWeapons" >> _wpnType >> "melee"));
-		if (_ismelee == "true") then {
+		_ismelee = (getNumber (configFile >> "CfgWeapons" >> _wpnType >> "melee") == 1);
+		if (_ismelee) then {
 			call dayz_meleeMagazineCheck;
 		};
 	};
@@ -396,8 +420,10 @@ dayz_myLoad = (((count dayz_myBackpackMags) * 0.2) + (count dayz_myBackpackWpns)
 	//Crowbar ammo fix
 	//"MeleeCrowbar" call dayz_meleeMagazineCheck;
 	_stop = diag_tickTime;
+	/*
 	if ((diag_tickTime - _timerMonitor) > 60) then {
 		diag_log format ["Loop Monitor - Spawn2: %1, DA: %2, UA: %3, SA: %4",(_stop - _start),(diag_tickTime - (player getVariable "damageActions")),(diag_tickTime - (player getVariable "upgradeActions")),(diag_tickTime - (player getVariable "selfActions"))];
 		_timerMonitor = diag_ticktime;
 	};
+	*/
 };
